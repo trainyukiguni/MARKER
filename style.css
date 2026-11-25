@@ -1,0 +1,132 @@
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    color: #263445;
+}
+
+header {
+    background: #183653;
+    color: white;
+    padding: 25px 8%;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 30px;
+    letter-spacing: 3px;
+}
+
+header p {
+    margin: 5px 0 0;
+    color: #cbd8e5;
+}
+
+main {
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 30px;
+    text-align: center;
+}
+
+main h2 {
+    font-size: 28px;
+}
+
+main p {
+    color: #687789;
+}
+
+button {
+    margin-top: 15px;
+    padding: 13px 25px;
+    background: #2476b8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #185b91;
+}
+
+form {
+    max-width: 400px;
+    margin: 25px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+input {
+    padding: 12px;
+    border: 1px solid #ccd3dc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+form label {
+    font-weight: bold;
+}
+
+.auth-card {
+    max-width: 480px;
+    margin: 30px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+}
+
+.auth-switch {
+    background: none;
+    color: #2476b8;
+    border: none;
+    padding: 8px;
+}
+
+.auth-switch:hover {
+    background: none;
+    text-decoration: underline;
+}
+
+.status-message {
+    margin: 15px auto;
+    max-width: 450px;
+    font-weight: bold;
+}
+
+#recordList {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 0;
+    list-style: none;
+}
+
+#recordList li {
+    background: white;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#recordList button {
+    margin: 0;
+    background: #b84040;
+    padding: 8px 15px;
+}
+
+[hidden] {
+    display: none !important;
+}

@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARKER</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>MARKER</h1>
+    <p>Railway Station Records</p>
+</header>
+
+<main>
+
+    <!-- ログイン画面 -->
+    <section id="authSection">
+        <div class="auth-card">
+            <h2>ログイン</h2>
+
+            <form id="loginForm">
+                <label for="loginEmail">メールアドレス</label>
+                <input id="loginEmail" type="email" required>
+
+                <label for="loginPassword">パスワード</label>
+                <input id="loginPassword" type="password" required>
+
+                <button type="submit">ログイン</button>
+            </form>
+
+            <button type="button" id="showRegister" class="auth-switch">
+                新規会員登録はこちら
+            </button>
+        </div>
+
+        <!-- 会員登録画面 -->
+        <div class="auth-card" id="registerSection" hidden>
+            <h2>新規会員登録</h2>
+
+            <form id="registerForm">
+                <label for="registerEmail">メールアドレス</label>
+                <input id="registerEmail" type="email" required>
+
+                <label for="registerPassword">パスワード（6文字以上）</label>
+                <input id="registerPassword" type="password" minlength="6" required>
+
+                <button type="submit">会員登録</button>
+            </form>
+
+            <button type="button" id="showLogin" class="auth-switch">
+                ログイン画面に戻る
+            </button>
+        </div>
+
+        <p id="authMessage" class="status-message"></p>
+    </section>
+
+    <!-- ログイン後の画面 -->
+    <section id="dashboard" hidden>
+        <h2>MARKER</h2>
+        <p id="userEmail"></p>
+        <p id="userRole"></p>
+
+        <button type="button" id="logoutButton">ログアウト</button>
+
+        <!-- 承認待ち画面 -->
+        <section id="pendingSection" hidden>
+            <h3>会員承認待ち</h3>
+            <p>管理者による承認が完了するまでお待ちください。</p>
+        </section>
+
+        <!-- 一般会員画面 -->
+        <section id="memberSection" hidden>
+            <h3>降車記録</h3>
+
+            <form id="recordForm">
+                <label for="station">駅名</label>
+                <input id="station" type="text" placeholder="例：大阪駅" required>
+
+                <label for="date">降車日</label>
+                <input id="date" type="date" required>
+
+                <button type="submit">記録する</button>
+            </form>
+
+            <p id="message"></p>
+
+            <h3>これまでの降車記録</h3>
+            <ul id="recordList"></ul>
+        </section>
+
+        <!-- 管理者画面 -->
+
+<section id="adminSection" hidden>
+    <h3>管理者メニュー</h3>
+    <p>管理者専用の管理画面です。</p>
+
+    <!-- 事業者管理 -->
+    <h4>① 事業者</h4>
+
+    <div>
+        <select id="operatorSelect">
+            <option value="">事業者を選択</option>
+        </select>
+
+        <button type="button" id="addOperator">
+            ＋追加
+        </button>
+
+        <button type="button" id="editOperator">
+            編集
+        </button>
+
+        <button type="button" id="deleteOperator">
+            削除
+        </button>
+    </div>
+
+    <!-- 路線管理 -->
+    <h4>② 路線</h4>
+
+    <div>
+        <select id="routeSelect">
+            <option value="">路線を選択</option>
+        </select>
+
+        <button type="button" id="addRoute">
+            ＋追加
+        </button>
+
+        <button type="button" id="editRoute">
+            編集
+        </button>
+
+        <button type="button" id="deleteRoute">
+            削除
+        </button>
+    </div>
+
+    <!-- 駅管理 -->
+    <h4>③ 駅</h4>
+
+    <div id="routeStationList">
+        <p>路線を選択してください。</p>
+    </div>
+
+    <div>
+        <select id="stationToAdd">
+            <option value="">追加する駅を選択</option>
+        </select>
+
+        <button type="button" id="addStationToRoute">
+            ＋追加
+        </button>
+    </div>
+
+    <button type="button" id="saveRouteStations">
+        変更を保存
+    </button>
+
+    <p id="routeStationMessage"></p>
+    <p id="adminMessage"></p>
+
+</section>
+</section>
+
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
