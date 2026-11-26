@@ -1,132 +1,586 @@
 
+/* =====================================
+   MARKER / TRACK BLUEPRINT
+   Complete stylesheet
+===================================== */
+
+:root {
+    --bg: #071827;
+    --surface: #102638;
+    --surface-light: #163449;
+    --line: #29495c;
+    --cyan: #5bc7e7;
+    --amber: #d99a55;
+    --text: #e6f4fa;
+    --muted: #8daebe;
+    --danger: #d96b6b;
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f9;
-    color: #263445;
+    font-family: Arial, "Noto Sans JP", sans-serif;
+    background-color: var(--bg);
+    background-image:
+        linear-gradient(rgba(91,199,231,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(91,199,231,.045) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--text);
 }
+
+/* =====================================
+   HEADER
+===================================== */
 
 header {
-    background: #183653;
-    color: white;
-    padding: 25px 8%;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 20px 5%;
+    background: #071827;
+    border-bottom: 1px solid var(--line);
 }
 
-header h1 {
-    margin: 0;
-    font-size: 30px;
-    letter-spacing: 3px;
-}
-
-header p {
-    margin: 5px 0 0;
-    color: #cbd8e5;
-}
-
-main {
-    max-width: 900px;
-    margin: 60px auto;
-    padding: 30px;
-    text-align: center;
-}
-
-main h2 {
-    font-size: 28px;
-}
-
-main p {
-    color: #687789;
-}
-
-button {
-    margin-top: 15px;
-    padding: 13px 25px;
-    background: #2476b8;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #185b91;
-}
-
-form {
-    max-width: 400px;
-    margin: 25px auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    text-align: left;
-}
-
-input {
-    padding: 12px;
-    border: 1px solid #ccd3dc;
-    border-radius: 6px;
-    font-size: 16px;
-}
-
-form label {
-    font-weight: bold;
-}
-
-.auth-card {
-    max-width: 480px;
-    margin: 30px auto;
-    padding: 30px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.06);
-}
-
-.auth-switch {
-    background: none;
-    color: #2476b8;
-    border: none;
-    padding: 8px;
-}
-
-.auth-switch:hover {
-    background: none;
-    text-decoration: underline;
-}
-
-.status-message {
-    margin: 15px auto;
-    max-width: 450px;
-    font-weight: bold;
-}
-
-#recordList {
-    max-width: 500px;
-    margin: 20px auto;
-    padding: 0;
-    list-style: none;
-}
-
-#recordList li {
-    background: white;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
+.header-content {
+    max-width: 1400px;
+    margin: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
-#recordList button {
-    margin: 0;
-    background: #b84040;
-    padding: 8px 15px;
+.brand-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
+
+.marker-logo {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+}
+
+.brand-text h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 7px;
+    line-height: 1.2;
+}
+
+.brand-text p {
+    margin: 5px 0 3px;
+    color: var(--cyan);
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+.brand-text span {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+}
+
+#headerControls,
+#adminViewControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#headerControls button,
+#adminViewControls button {
+    margin: 0;
+}
+
+/* =====================================
+   MAIN LAYOUT
+===================================== */
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 45px 5%;
+    text-align: left;
+}
+
+main * {
+    text-align: left;
+}
+
+main h2 {
+    font-size: clamp(25px, 4vw, 36px);
+    color: var(--text);
+}
+
+main h3 {
+    color: var(--cyan);
+    margin-top: 30px;
+}
+
+main h4 {
+    color: var(--amber);
+}
+
+main p {
+    color: var(--muted);
+    line-height: 1.8;
+}
+
+main section {
+    margin: 25px 0;
+    padding: 28px;
+    background: rgba(16,38,56,.96);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+}
+
+/* =====================================
+   BUTTONS
+===================================== */
+
+button {
+    margin-top: 15px;
+    padding: 12px 20px;
+    background: var(--cyan);
+    color: #071827;
+    border: 1px solid var(--cyan);
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .2s;
+}
+
+button:hover {
+    background: transparent;
+    color: var(--cyan);
+}
+
+/* =====================================
+   FORMS
+===================================== */
+
+form {
+    width: 100%;
+    max-width: 620px;
+    margin: 25px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+form label {
+    color: var(--muted);
+    font-weight: bold;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 13px;
+    background: #091e2d;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 15px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid var(--cyan);
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--cyan);
+}
+
+/* =====================================
+   AUTHENTICATION
+===================================== */
+
+.auth-card {
+    max-width: 480px;
+    margin: 35px auto;
+    padding: 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--cyan);
+    border-radius: 4px;
+}
+
+.auth-switch {
+    background: transparent;
+    color: var(--cyan);
+    border: none;
+}
+
+.status-message {
+    margin: 15px 0;
+    color: var(--amber);
+    font-weight: bold;
+}
+
+/* =====================================
+   STATION SELECTOR
+===================================== */
+
+#memberStationList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+#memberStationList label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px;
+    background: #091e2d;
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+/* =====================================
+   RECORD LIST
+===================================== */
+
+#recordList {
+    max-width: 100%;
+    margin: 25px 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+#recordList li {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-height: 76px;
+    margin: 0;
+    padding: 13px 18px;
+    background: linear-gradient(100deg, #102638, #0c2132);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cyan);
+    transition: .2s;
+}
+
+#recordList li:hover {
+    border-color: var(--cyan);
+    background: #163449;
+}
+
+#recordList li > span {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.6;
+}
+
+#recordList li button {
+    flex-shrink: 0;
+    min-width: 82px;
+    margin: 0;
+    padding: 9px 14px;
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+/* =====================================
+   COMMUNITY BOARD
+===================================== */
+
+#communityBoard {
+    margin-top: 60px;
+    padding-top: 35px;
+    border-top: 2px solid var(--line);
+}
+
+#communityBoard > h3 {
+    margin-top: 0;
+    color: var(--cyan);
+    font-size: 28px;
+    letter-spacing: 3px;
+}
+
+#communityBoard > p {
+    margin-bottom: 28px;
+}
+
+/* =====================================
+   BOARD POST FORM
+===================================== */
+
+#boardPostForm {
+    max-width: 100%;
+    margin: 25px 0 45px;
+    padding: 28px;
+    background: #0b2030;
+    border: 1px solid #42677d;
+    border-top: 4px solid var(--amber);
+    border-radius: 4px;
+}
+
+#boardPostForm label {
+    color: var(--amber);
+}
+
+#boardPostForm input,
+#boardPostForm textarea {
+    background: #071827;
+    border-color: #35566b;
+}
+
+#boardPostForm textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+#boardPostForm button {
+    align-self: flex-start;
+    min-width: 150px;
+}
+
+/* =====================================
+   BOARD POST LIST
+===================================== */
+
+#communityBoard #boardPostList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
+    gap: 24px;
+    align-items: stretch;
+    margin-top: 25px;
+}
+
+/* Individual post card */
+
+#communityBoard #boardPostList > article.board-post {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 270px;
+    margin: 0;
+    padding: 28px;
+    overflow-wrap: anywhere;
+
+    background:
+        linear-gradient(145deg, #193c52 0%, #102638 65%, #0b2030 100%);
+
+    border: 1px solid #42677d;
+    border-left: 6px solid var(--cyan);
+    border-radius: 5px;
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+    transition:
+        transform .2s,
+        border-color .2s,
+        box-shadow .2s;
+}
+
+#communityBoard #boardPostList > article.board-post:hover {
+    transform: translateY(-5px);
+    border-color: var(--cyan);
+
+    box-shadow:
+        0 14px 32px rgba(0,0,0,.45),
+        0 0 12px rgba(91,199,231,.08);
+}
+
+/* Post title */
+
+#communityBoard .board-post h4 {
+    margin: 0 0 20px;
+    padding: 0 0 16px;
+
+    color: #f0ad68;
+    font-size: 23px;
+    font-weight: bold;
+    line-height: 1.5;
+
+    border-bottom: 1px solid #42677d;
+}
+
+/* Post content */
+
+#communityBoard .board-post > p:not(.board-post-meta) {
+    flex: 1;
+    margin: 0;
+
+    color: #e0edf3;
+    font-size: 16px;
+    line-height: 1.9;
+
+    white-space: pre-wrap;
+}
+
+/* Post author and date */
+
+#communityBoard .board-post-meta {
+    margin: 25px 0 0;
+    padding-top: 15px;
+
+    color: #91b5c8;
+    font-size: 12px;
+    line-height: 1.7;
+
+    border-top: 1px solid #42677d;
+}
+
+/* =====================================
+   GENERAL
+===================================== */
 
 [hidden] {
     display: none !important;
+}
+
+/* =====================================
+   RESPONSIVE DESIGN
+===================================== */
+
+@media (max-width: 700px) {
+
+    header {
+        padding: 15px 5%;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .brand-area {
+        gap: 10px;
+    }
+
+    .marker-logo {
+        width: 48px;
+        height: 48px;
+    }
+
+    .brand-text h1 {
+        font-size: 25px;
+        letter-spacing: 5px;
+    }
+
+    .brand-text p {
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    .brand-text span {
+        font-size: 8px;
+    }
+
+    #headerControls,
+    #adminViewControls {
+        width: 100%;
+    }
+
+    #headerControls button,
+    #adminViewControls button {
+        flex: 1;
+    }
+
+    main {
+        padding: 30px 4%;
+    }
+
+    main section {
+        padding: 19px;
+    }
+
+    form {
+        max-width: none;
+    }
+
+    #memberStationList {
+        grid-template-columns: 1fr;
+    }
+
+    #recordList li {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    #recordList li > span {
+        flex-basis: 100%;
+    }
+
+    #boardPostForm {
+        padding: 18px;
+    }
+
+    #communityBoard #boardPostList {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    #communityBoard #boardPostList > article.board-post {
+        min-height: 220px;
+        padding: 22px;
+    }
+
+    #communityBoard .board-post h4 {
+        font-size: 21px;
+    }
+
+    .auth-card {
+        padding: 22px;
+        margin: 20px auto;
+    }
+}
+
+/* =====================================
+   BOARD LIKE BUTTON
+===================================== */
+
+#communityBoard .board-like-button {
+    align-self: flex-start;
+    margin-top: 18px;
+    padding: 10px 18px;
+    background: #0b2030;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#communityBoard .board-like-button:hover {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+#communityBoard .board-like-button.liked {
+    color: #f0ad68;
+    border-color: var(--amber);
+    background: rgba(217,154,85,.10);
+}
+
+#communityBoard .board-like-button:disabled {
+    opacity: .5;
+    cursor: wait;
 }

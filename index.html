@@ -10,8 +10,50 @@
 <body>
 
 <header>
-    <h1>MARKER</h1>
-    <p>Railway Station Records</p>
+    <div class="header-content">
+
+        <div class="brand-area">
+            <svg class="marker-logo" viewBox="0 0 80 80"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 62 H29 L48 43 H72"
+                      fill="none" stroke="#5bc7e7"
+                      stroke-width="4"/>
+                <path d="M8 18 H29 L48 43"
+                      fill="none" stroke="#d99a55"
+                      stroke-width="3"/>
+                <circle cx="8" cy="62" r="5"
+                        fill="#071827" stroke="#e6f4fa" stroke-width="2"/>
+                <circle cx="8" cy="18" r="5"
+                        fill="#071827" stroke="#e6f4fa" stroke-width="2"/>
+                <circle cx="48" cy="43" r="7"
+                        fill="#5bc7e7"/>
+                <circle cx="72" cy="43" r="5"
+                        fill="#071827" stroke="#e6f4fa" stroke-width="2"/>
+            </svg>
+
+            <div class="brand-text">
+                <h1>MARKER</h1>
+                <p>Member Activity Records and Knowledge Exchange Repository</p>
+            </div>
+        </div>
+
+        <div id="headerControls" hidden>
+            <div id="adminViewControls" hidden>
+                <button type="button" id="showMemberView">
+                    一般ユーザー画面
+                </button>
+
+                <button type="button" id="showAdminView">
+                    管理者画面
+                </button>
+            </div>
+
+            <button type="button" id="logoutButton">
+                ログアウト
+            </button>
+        </div>
+
+    </div>
 </header>
 
 <main>
@@ -61,10 +103,9 @@
     <!-- ログイン後の画面 -->
     <section id="dashboard" hidden>
         <h2>MARKER</h2>
+        <p id="userName"></p>
         <p id="userEmail"></p>
         <p id="userRole"></p>
-
-        <button type="button" id="logoutButton">ログアウト</button>
 
         <!-- 承認待ち画面 -->
         <section id="pendingSection" hidden>
@@ -76,20 +117,108 @@
         <section id="memberSection" hidden>
             <h3>降車記録</h3>
 
-            <form id="recordForm">
-                <label for="station">駅名</label>
-                <input id="station" type="text" placeholder="例：大阪駅" required>
+<div class="username-settings">
+    <h3>ユーザー名の設定</h3>
 
-                <label for="date">降車日</label>
-                <input id="date" type="date" required>
+    <p>現在のユーザー名：<strong id="currentUsername">読み込み中...</strong></p>
 
-                <button type="submit">記録する</button>
-            </form>
+    <form id="usernameForm">
+        <label for="newUsername">新しいユーザー名</label>
+        <input
+            id="newUsername"
+            type="text"
+            maxlength="30"
+            placeholder="新しいユーザー名"
+            required
+        >
+
+        <button type="submit">ユーザー名を変更</button>
+    </form>
+
+    <p id="usernameMessage"></p>
+</div>
+
+       
+<form id="recordForm">
+
+    <label for="memberOperatorSelect">事業者</label>
+    <select id="memberOperatorSelect" required>
+        <option value="">事業者を選択してください</option>
+    </select>
+
+    <label for="memberLineSelect">路線</label>
+    <select id="memberLineSelect" required disabled>
+        <option value="">先に事業者を選択してください</option>
+    </select>
+
+    <h4>降車した駅を選択</h4>
+    <div id="memberStationList">
+        <p>路線を選択してください。</p>
+    </div>
+
+    <label for="date">降車日（選択した駅すべて共通）</label>
+    <input
+        id="date"
+        type="text"
+        placeholder="YYYY-MM-DD"
+        maxlength="10"
+        pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
+        title="2026-01-01 の形式で入力してください"
+        required
+    >
+
+    <button type="submit">選択した駅をまとめて登録</button>
+
+</form>
 
             <p id="message"></p>
 
             <h3>これまでの降車記録</h3>
+        
             <ul id="recordList"></ul>
+
+<!-- =====================================
+     COMMUNITY BOARD
+===================================== -->
+
+<div id="communityBoard">
+
+    <h3>COMMUNITY BOARD</h3>
+    <p>会員同士で情報を共有できる掲示板です。</p>
+
+    <form id="boardPostForm">
+
+        <label for="boardTitle">タイトル</label>
+        <input
+            id="boardTitle"
+            type="text"
+            maxlength="100"
+            placeholder="投稿タイトル"
+            required
+        >
+
+        <label for="boardContent">投稿内容</label>
+        <textarea
+            id="boardContent"
+            maxlength="2000"
+            rows="5"
+            placeholder="投稿内容を入力してください"
+            required
+        ></textarea>
+
+        <button type="submit">投稿する</button>
+
+    </form>
+
+    <p id="boardMessage"></p>
+
+    <h4>投稿一覧</h4>
+    <div id="boardPostList">
+        <p>投稿を読み込んでいます...</p>
+    </div>
+
+</div>
+
         </section>
 
         <!-- 管理者画面 -->
@@ -115,7 +244,7 @@
         </button>
 
         <button type="button" id="deleteOperator">
-            削除
+            完全削除
         </button>
     </div>
 
@@ -135,9 +264,24 @@
             編集
         </button>
 
-        <button type="button" id="deleteRoute">
-            削除
-        </button>
+       <button type="button" id="removeRoute">
+    リストから削除
+</button>
+
+<button type="button" id="deleteRoute">
+    完全削除
+</button>
+        <div>
+            <h4>未所属の路線を割り当てる</h4>
+
+            <select id="unassignedRouteSelect">
+                <option value="">未所属の路線を選択</option>
+            </select>
+
+            <button type="button" id="assignRoute">
+             選択中の事業者に割り当てる
+            </button>
+        </div>
     </div>
 
     <!-- 駅管理 -->
@@ -156,10 +300,6 @@
             ＋追加
         </button>
     </div>
-
-    <button type="button" id="saveRouteStations">
-        変更を保存
-    </button>
 
     <p id="routeStationMessage"></p>
     <p id="adminMessage"></p>

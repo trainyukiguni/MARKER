@@ -1,4 +1,4 @@
-
+console.log("script.js 読み込み開始");
 // =====================================
 // 1. Supabaseへの接続
 // =====================================
@@ -117,7 +117,7 @@ async function loadDashboard(user) {
 
     const { data: profile, error } = await client
         .from("profiles")
-        .select("email, role, status")
+        .select("email, role, status, username")
         .eq("id", user.id)
         .single();
 
@@ -129,7 +129,10 @@ async function loadDashboard(user) {
 
     authSection.hidden = true;
     dashboard.hidden = false;
-
+    document.getElementById("headerControls").hidden = false;
+    
+    document.getElementById("userName").textContent =
+    "ユーザー名：" + profile.username;
     userEmail.textContent = user.email;
 
     pendingSection.hidden = true;
@@ -142,16 +145,68 @@ async function loadDashboard(user) {
         return;
     }
 
-   if (profile.role === "admin") {
+  
+if (profile.role === "admin") {
     userRole.textContent = "権限：管理者";
-    adminSection.hidden = false;
-    await loadAdminOptions();
-}else {
-        userRole.textContent = "権限：一般会員";
+
+    document.getElementById("adminViewControls").hidden = false;
+
+    const savedView = sessionStorage.getItem("markerAdminView");
+
+    if (savedView === "member") {
+        adminSection.hidden = true;
         memberSection.hidden = false;
-        await loadStations();
+
+        await loadMemberOptions();
+        await loadUsernameSettings();
         await displayRecords();
+        await loadBoardPosts();
+
+    } else {
+        adminSection.hidden = false;
+        memberSection.hidden = true;
+
+        await loadAdminOptions();
     }
+
+} else {
+    userRole.textContent = "権限：一般会員";
+
+    document.getElementById("adminViewControls").hidden = true;
+    memberSection.hidden = false;
+
+    await loadMemberOptions();
+    await loadUsernameSettings();
+    await displayRecords();
+    await loadBoardPosts();
+}
+
+// =====================================
+// 管理者の画面切り替え
+// =====================================
+
+document.getElementById("showMemberView")
+    .addEventListener("click", async () => {
+
+        adminSection.hidden = true;
+        memberSection.hidden = false;
+        sessionStorage.setItem("markerAdminView", "member");
+
+        await loadMemberOptions();
+        await loadUsernameSettings();
+        await displayRecords();
+        await loadBoardPosts();
+    });
+
+document.getElementById("showAdminView")
+    .addEventListener("click", () => {
+
+        memberSection.hidden = true;
+        adminSection.hidden = false;
+
+        sessionStorage.setItem("markerAdminView", "admin");
+    });
+
 }
 
 
@@ -209,36 +264,292 @@ async function loadStations() {
 
 
 // =====================================
+// ユーザー名の読み込み・変更
+// =====================================
+
+async function loadUsernameSettings() {
+
+    const { data: userData } = await client.auth.getUser();
+
+    if (!userData.user) return;
+
+    const { data, error } = await client
+        .from("profiles")
+        .select("username")
+        .eq("id", userData.user.id)
+        .single();
+
+    if (error) {
+        document.getElementById("currentUsername").textContent =
+            "読み込みエラー";
+        return;
+    }
+
+    document.getElementById("currentUsername").textContent =
+        data.username;
+
+    document.getElementById("newUsername").value =
+        data.username;
+}
+
+
+// ユーザー名の変更
+document.getElementById("usernameForm")
+    .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const username =
+            document.getElementById("newUsername").value.trim();
+
+        const message =
+            document.getElementById("usernameMessage");
+
+        if (!username) {
+            message.textContent = "ユーザー名を入力してください。";
+            return;
+        }
+
+        const { data: userData } = await client.auth.getUser();
+
+        if (!userData.user) return;
+
+        const { error } = await client
+            .from("profiles")
+            .update({ username: username })
+            .eq("id", userData.user.id);
+
+        if (error) {
+            if (error.code === "23505") {
+                message.textContent =
+                    "このユーザー名はすでに使用されています。";
+            } else {
+                message.textContent =
+                    "変更エラー：" + error.message;
+            }
+            return;
+        }
+
+        document.getElementById("currentUsername").textContent =
+            username;
+
+        message.textContent = "ユーザー名を変更しました。";
+    });
+
+// =====================================
 // 9. 降車記録の登録
 // =====================================
+
+
+// =====================================
+// 一般ユーザー用：事業者・路線・駅の選択
+// =====================================
+
+let memberLinesCache = [];
+
+// 事業者と路線を読み込む
+async function loadMemberOptions() {
+
+    const operatorSelect =
+        document.getElementById("memberOperatorSelect");
+
+    const lineSelect =
+        document.getElementById("memberLineSelect");
+
+    const stationList =
+        document.getElementById("memberStationList");
+
+    const { data: operators, error: operatorError } = await client
+        .from("operators")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name");
+
+    const { data: lines, error: lineError } = await client
+        .from("lines")
+        .select("id, name, operator_id")
+        .eq("is_active", true)
+        .order("name");
+
+    if (operatorError || lineError) {
+        console.error(operatorError || lineError);
+        return;
+    }
+
+    memberLinesCache = lines;
+
+    operatorSelect.innerHTML =
+        '<option value="">事業者を選択してください</option>';
+
+    operators.forEach(operator => {
+        const option = document.createElement("option");
+        option.value = operator.id;
+        option.textContent = operator.name;
+        operatorSelect.appendChild(option);
+    });
+
+    lineSelect.innerHTML =
+        '<option value="">先に事業者を選択してください</option>';
+
+    lineSelect.disabled = true;
+
+    stationList.innerHTML =
+        "<p>路線を選択してください。</p>";
+}
+
+
+// 事業者を選んだとき
+document.getElementById("memberOperatorSelect")
+    .addEventListener("change", function() {
+
+        const operatorId = this.value;
+
+        const lineSelect =
+            document.getElementById("memberLineSelect");
+
+        const stationList =
+            document.getElementById("memberStationList");
+
+        lineSelect.innerHTML =
+            '<option value="">路線を選択してください</option>';
+
+        stationList.innerHTML =
+            "<p>路線を選択してください。</p>";
+
+        if (!operatorId) {
+            lineSelect.disabled = true;
+            return;
+        }
+
+        memberLinesCache
+            .filter(line =>
+                String(line.operator_id) === String(operatorId)
+            )
+            .forEach(line => {
+                const option = document.createElement("option");
+                option.value = line.id;
+                option.textContent = line.name;
+                lineSelect.appendChild(option);
+            });
+
+        lineSelect.disabled = false;
+    });
+
+
+// 路線を選んだとき
+document.getElementById("memberLineSelect")
+    .addEventListener("change", async function() {
+
+        const lineId = this.value;
+
+        const stationList =
+            document.getElementById("memberStationList");
+
+        stationList.innerHTML = "<p>読み込み中...</p>";
+
+        if (!lineId) {
+            stationList.innerHTML =
+                "<p>路線を選択してください。</p>";
+            return;
+        }
+
+        const { data, error } = await client
+            .from("station_lines")
+            .select("station_id, station_order, stations(id, name, prefecture)")
+            .eq("line_id", lineId)
+            .order("station_order");
+
+        if (error) {
+            console.error(error);
+            stationList.textContent = "駅の読み込みに失敗しました。";
+            return;
+        }
+
+        stationList.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            stationList.textContent =
+                "この路線には登録済みの駅がありません。";
+            return;
+        }
+
+        data.forEach(item => {
+
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+
+            checkbox.type = "checkbox";
+            checkbox.name = "memberStation";
+            checkbox.value = item.station_id;
+
+            label.style.display = "block";
+            label.style.textAlign = "left";
+
+            label.appendChild(checkbox);
+            label.appendChild(
+                document.createTextNode(
+                    " " + item.stations.name
+                )
+            );
+
+            stationList.appendChild(label);
+        });
+    });
 
 document.getElementById("recordForm").addEventListener("submit", async function(event) {
 
     event.preventDefault();
 
-    const stationId = document.getElementById("station").value;
     const date = document.getElementById("date").value;
 
-    const { data: userData } = await client.auth.getUser();
-
-    const { error } = await client
-        .from("ride_records")
-        .insert({
-            user_id: userData.user.id,
-            station_id: stationId,
-            ride_date: date
-        });
+    const selectedStations = [
+        ...document.querySelectorAll('input[name="memberStation"]:checked')
+    ].map(checkbox => Number(checkbox.value));
 
     const message = document.getElementById("message");
 
+    if (selectedStations.length === 0) {
+        message.textContent = "駅を1つ以上選択してください。";
+        return;
+    }
+
+    const { data: userData } = await client.auth.getUser();
+
+    if (!userData.user) {
+        message.textContent = "ログイン状態を確認できません。";
+        return;
+    }
+
+    const recordsToInsert = selectedStations.map(stationId => ({
+        user_id: userData.user.id,
+        station_id: stationId,
+        ride_date: date
+    }));
+
+    const { error } = await client
+        .from("ride_records")
+        .upsert(recordsToInsert, {
+            onConflict: "user_id,station_id,ride_date",
+            ignoreDuplicates: true
+        });
+
     if (error) {
+        console.error(error);
         message.textContent = "登録エラー：" + error.message;
         return;
     }
 
-    message.textContent = "降車記録を登録しました！";
+    message.textContent = "選択した駅の登録処理が完了しました。";
 
     document.getElementById("recordForm").reset();
+    setTodayDate();
+
+    document.getElementById("memberLineSelect").disabled = true;
+    document.getElementById("memberLineSelect").innerHTML =
+        '<option value="">先に事業者を選択してください</option>';
+
+    document.getElementById("memberStationList").innerHTML =
+        "<p>路線を選択してください。</p>";
 
     await displayRecords();
 });
@@ -251,28 +562,123 @@ document.getElementById("recordForm").addEventListener("submit", async function(
 async function displayRecords() {
 
     const recordList = document.getElementById("recordList");
-    recordList.innerHTML = "";
+    recordList.innerHTML = "読み込み中...";
 
-    const { data, error } = await client
+    const { data: userData } = await client.auth.getUser();
+
+    if (!userData.user) return;
+
+    const currentUserId = userData.user.id;
+
+    const { data: records, error } = await client
         .from("ride_records")
-        .select("id, ride_date, station_id, stations(name)")
+        .select("id, user_id, ride_date, station_id, stations(name)")
         .order("ride_date", { ascending: false });
 
     if (error) {
         console.error(error);
+        recordList.textContent = "記録の読み込みに失敗しました。";
         return;
     }
 
-    data.forEach(function(record) {
+    const userIds = [...new Set(records.map(record => record.user_id))];
+
+    const { data: profiles, error: profileError } = await client
+        .from("public_profiles")
+        .select("id, username")
+        .in("id", userIds);
+
+    if (profileError) {
+        console.error(profileError);
+        recordList.textContent = "ユーザー情報の読み込みに失敗しました。";
+        return;
+    }
+
+    const usernameMap = {};
+
+    profiles.forEach(profile => {
+        usernameMap[profile.id] = profile.username;
+    });
+
+    recordList.innerHTML = "";
+
+    records.forEach(function(record) {
 
         const li = document.createElement("li");
-
         const text = document.createElement("span");
 
+        const username = usernameMap[record.user_id] || "不明なユーザー";
+
         text.textContent =
-            record.stations.name + "（" + record.ride_date + "）";
+            username + "：" +
+            record.stations.name +
+            "（" + record.ride_date + "）";
 
         li.appendChild(text);
+
+        if (record.user_id === currentUserId) {
+
+            const editButton = document.createElement("button");
+            editButton.textContent = "編集";
+            editButton.type = "button";
+
+            editButton.addEventListener("click", async function() {
+
+                const newDate = prompt(
+                    "新しい日付を入力してください（YYYY-MM-DD）",
+                    record.ride_date
+                );
+
+                if (newDate === null) return;
+
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                    alert("日付はYYYY-MM-DD形式で入力してください。");
+                    return;
+                }
+
+                const { error } = await client
+                    .from("ride_records")
+                    .update({ ride_date: newDate })
+                    .eq("id", record.id)
+                    .eq("user_id", currentUserId);
+
+                if (error) {
+                    console.error(error);
+                    alert("更新に失敗しました。");
+                    return;
+                }
+
+                await displayRecords();
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "削除";
+            deleteButton.type = "button";
+
+            deleteButton.addEventListener("click", async function() {
+
+                const confirmed = confirm("この降車記録を削除しますか？");
+
+                if (!confirmed) return;
+
+                const { error } = await client
+                    .from("ride_records")
+                    .delete()
+                    .eq("id", record.id)
+                    .eq("user_id", currentUserId);
+
+                if (error) {
+                    console.error(error);
+                    alert("削除に失敗しました。");
+                    return;
+                }
+
+                await displayRecords();
+            });
+
+            li.appendChild(editButton);
+            li.appendChild(deleteButton);
+        }
 
         recordList.appendChild(li);
     });
@@ -422,12 +828,14 @@ async function loadAdminOptions(selectedOperatorId = "", selectedLineId = "") {
     const { data: operators, error: operatorError } = await client
         .from("operators")
         .select("id, name")
+        .eq("is_active", true)
         .order("name");
 
     const { data: lines, error: lineError } = await client
-        .from("lines")
-        .select("id, name, operator_id, operator")
-        .order("name");
+      .from("lines")
+      .select("id, name, operator_id, operator, is_active")
+      .eq("is_active", true)
+      .order("name");
 
     const { data: stations, error: stationError } = await client
         .from("stations")
@@ -449,6 +857,8 @@ async function loadAdminOptions(selectedOperatorId = "", selectedLineId = "") {
 
     const operatorSelect = document.getElementById("operatorSelect");
     const stationToAdd = document.getElementById("stationToAdd");
+    const unassignedRouteSelect =
+    document.getElementById("unassignedRouteSelect");
 
     operatorSelect.innerHTML =
         '<option value="">事業者を選択</option>';
@@ -469,6 +879,18 @@ async function loadAdminOptions(selectedOperatorId = "", selectedLineId = "") {
         option.textContent =
             station.name + "（" + (station.prefecture || "") + "）";
         stationToAdd.appendChild(option);
+    });
+    // 未所属路線の選択肢を作成
+unassignedRouteSelect.innerHTML =
+    '<option value="">未所属の路線を選択</option>';
+
+lines
+    .filter(line => line.operator_id === null)
+    .forEach(line => {
+        const option = document.createElement("option");
+        option.value = line.id;
+        option.textContent = line.name;
+        unassignedRouteSelect.appendChild(option);
     });
 
     operatorSelect.value = selectedOperatorId;
@@ -548,6 +970,53 @@ async function loadStationsForRoute() {
 
 
 // 駅一覧を画面に表示
+// =====================================
+// 路線の駅一覧を自動保存
+// =====================================
+
+async function autoSaveRouteStations() {
+
+    const lineId = document.getElementById("routeSelect").value;
+    const message = document.getElementById("routeStationMessage");
+
+    if (!lineId) {
+        message.textContent = "路線を選択してください。";
+        return false;
+    }
+
+    message.textContent = "保存中...";
+
+    const { error: deleteError } = await client
+        .from("station_lines")
+        .delete()
+        .eq("line_id", lineId);
+
+    if (deleteError) {
+        message.textContent = "保存エラー：" + deleteError.message;
+        return false;
+    }
+
+    if (routeStationsCache.length > 0) {
+
+        const records = routeStationsCache.map((station, index) => ({
+            station_id: Number(station.id),
+            line_id: Number(lineId),
+            station_order: index + 1
+        }));
+
+        const { error: insertError } = await client
+            .from("station_lines")
+            .insert(records);
+
+        if (insertError) {
+            message.textContent = "保存エラー：" + insertError.message;
+            return false;
+        }
+    }
+
+    message.textContent = "自動保存しました。";
+    return true;
+}
 function renderRouteStations() {
 
     const list = document.getElementById("routeStationList");
@@ -555,7 +1024,6 @@ function renderRouteStations() {
 
     if (routeStationsCache.length === 0) {
         list.textContent = "駅が登録されていません。";
-        return;
     }
 
     routeStationsCache.forEach((station, index) => {
@@ -577,10 +1045,12 @@ function renderRouteStations() {
         upButton.textContent = "↑";
         upButton.disabled = index === 0;
 
-        upButton.addEventListener("click", () => {
+        upButton.addEventListener("click", async () => {
             [routeStationsCache[index - 1], routeStationsCache[index]] =
                 [routeStationsCache[index], routeStationsCache[index - 1]];
+
             renderRouteStations();
+            await autoSaveRouteStations();
         });
 
         // 下へ移動
@@ -589,16 +1059,19 @@ function renderRouteStations() {
         downButton.textContent = "↓";
         downButton.disabled = index === routeStationsCache.length - 1;
 
-        downButton.addEventListener("click", () => {
+        downButton.addEventListener("click", async () => {
             [routeStationsCache[index], routeStationsCache[index + 1]] =
                 [routeStationsCache[index + 1], routeStationsCache[index]];
+
             renderRouteStations();
+            await autoSaveRouteStations();
         });
 
         // 駅情報を編集
         const editButton = document.createElement("button");
         editButton.type = "button";
         editButton.textContent = "編集";
+
 
         editButton.addEventListener("click", async () => {
 
@@ -634,11 +1107,75 @@ function renderRouteStations() {
         // この路線から駅を削除
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
-        deleteButton.textContent = "削除";
+        deleteButton.textContent = "リストから削除";
 
-        deleteButton.addEventListener("click", () => {
+        deleteButton.addEventListener("click", async () => {
+
+            if (!confirm(station.name + "をこの路線から削除しますか？")) {
+                return;
+            }
+
             routeStationsCache.splice(index, 1);
             renderRouteStations();
+
+            await autoSaveRouteStations();
+        });
+
+        // 駅そのものを完全削除
+        const permanentDeleteButton = document.createElement("button");
+        permanentDeleteButton.type = "button";
+        permanentDeleteButton.textContent = "駅を完全削除";
+
+        permanentDeleteButton.addEventListener("click", async () => {
+
+            if (!confirm(
+                station.name +
+                "を完全削除しますか？\n" +
+                "すべての路線からも削除されます。\n" +
+                "乗車記録がある場合は削除できません。"
+            )) return;
+
+            const { count: recordCount, error: recordError } = await client
+                .from("ride_records")
+                .select("*", { count: "exact", head: true })
+                .eq("station_id", station.id);
+
+            if (recordError) {
+                alert("乗車記録確認エラー：" + recordError.message);
+                return;
+            }
+
+            if (recordCount > 0) {
+                alert("この駅には乗車記録があるため、完全削除できません。");
+                return;
+            }
+
+            const { error: linkDeleteError } = await client
+                .from("station_lines")
+                .delete()
+                .eq("station_id", station.id);
+
+            if (linkDeleteError) {
+                alert("路線との紐づけ削除エラー：" + linkDeleteError.message);
+                return;
+            }
+
+            const { error } = await client
+                .from("stations")
+                .delete()
+                .eq("id", station.id);
+
+            if (error) {
+                alert("駅の完全削除エラー：" + error.message);
+                return;
+            }
+
+            await loadAdminOptions(
+                document.getElementById("operatorSelect").value,
+                document.getElementById("routeSelect").value
+            );
+
+            alert("駅を完全削除しました。");
         });
 
         div.appendChild(text);
@@ -646,12 +1183,11 @@ function renderRouteStations() {
         div.appendChild(downButton);
         div.appendChild(editButton);
         div.appendChild(deleteButton);
+        div.appendChild(permanentDeleteButton);
 
         list.appendChild(div);
     });
 }
-
-
 // =====================================
 // 事業者の追加・編集・削除
 // =====================================
@@ -714,6 +1250,7 @@ document.getElementById("editOperator").addEventListener("click", async () => {
 });
 
 
+
 document.getElementById("deleteOperator").addEventListener("click", async () => {
 
     const operatorId = document.getElementById("operatorSelect").value;
@@ -727,21 +1264,65 @@ document.getElementById("deleteOperator").addEventListener("click", async () => 
         item => String(item.id) === operatorId
     );
 
-    if (!confirm(operator.name + "を削除しますか？")) return;
+    if (!confirm(
+        operator.name +
+        "と、その事業者に属する全路線を完全削除します。\n駅そのものと乗車記録は残ります。\n本当に削除しますか？"
+    )) return;
 
+    // 対象路線を取得
+    const { data: lines, error: selectError } = await client
+        .from("lines")
+        .select("id")
+        .eq("operator_id", operatorId);
+
+    if (selectError) {
+        alert("路線取得エラー：" + selectError.message);
+        return;
+    }
+
+    const lineIds = lines.map(line => line.id);
+
+    // 駅と路線の紐づけを削除
+    if (lineIds.length > 0) {
+
+        const { error: stationError } = await client
+            .from("station_lines")
+            .delete()
+            .in("line_id", lineIds);
+
+        if (stationError) {
+            alert("駅の紐づけ削除エラー：" + stationError.message);
+            return;
+        }
+
+        // 路線を削除
+        const { error: lineError } = await client
+            .from("lines")
+            .delete()
+            .eq("operator_id", operatorId);
+
+        if (lineError) {
+            alert("路線削除エラー：" + lineError.message);
+            return;
+        }
+    }
+
+    // 事業者を削除
     const { error } = await client
         .from("operators")
         .delete()
         .eq("id", operatorId);
 
     if (error) {
-        alert("削除エラー：" + error.message +
-            "\nこの事業者に路線が残っていないか確認してください。");
+        alert("事業者削除エラー：" + error.message);
         return;
     }
 
     await loadAdminOptions();
+
+    alert("事業者と所属路線を完全削除しました。");
 });
+
 
 
 // =====================================
@@ -818,6 +1399,7 @@ document.getElementById("editRoute").addEventListener("click", async () => {
 });
 
 
+
 document.getElementById("deleteRoute").addEventListener("click", async () => {
 
     const lineId = document.getElementById("routeSelect").value;
@@ -831,8 +1413,12 @@ document.getElementById("deleteRoute").addEventListener("click", async () => {
         item => String(item.id) === lineId
     );
 
-    if (!confirm(line.name + "を削除しますか？")) return;
+    if (!confirm(
+        line.name +
+        "を完全削除します。\n駅そのものと乗車記録は残ります。\n本当に削除しますか？"
+    )) return;
 
+    // 駅と路線の紐づけを削除
     const { error: stationError } = await client
         .from("station_lines")
         .delete()
@@ -843,6 +1429,7 @@ document.getElementById("deleteRoute").addEventListener("click", async () => {
         return;
     }
 
+    // 路線を完全削除
     const { error } = await client
         .from("lines")
         .delete()
@@ -856,10 +1443,14 @@ document.getElementById("deleteRoute").addEventListener("click", async () => {
     await loadAdminOptions(
         document.getElementById("operatorSelect").value
     );
+
+    alert("路線を完全削除しました。");
 });
 
+
+
 // =====================================
-// 路線に駅を追加
+// 路線に駅を追加（オートセーブ）
 // =====================================
 
 document.getElementById("addStationToRoute")
@@ -867,14 +1458,14 @@ document.getElementById("addStationToRoute")
 
         const stationId = document.getElementById("stationToAdd").value;
         const message = document.getElementById("routeStationMessage");
-
         const lineId = document.getElementById("routeSelect").value;
-        const operatorId = document.getElementById("operatorSelect").value;
 
         if (!lineId) {
             message.textContent = "先に路線を選択してください。";
             return;
         }
+
+        let station;
 
         // 駅が未選択なら新規登録
         if (!stationId) {
@@ -905,6 +1496,7 @@ document.getElementById("addStationToRoute")
                 return;
             }
 
+            station = data;
             allStationsCache.push(data);
 
             const option = document.createElement("option");
@@ -914,26 +1506,35 @@ document.getElementById("addStationToRoute")
 
             document.getElementById("stationToAdd").appendChild(option);
 
-            routeStationsCache.push(data);
-            renderRouteStations();
+        } else {
 
-            message.textContent =
-                data.name + "を登録しました。変更を保存してください。";
+            // 既存駅を取得
+            station = allStationsCache.find(
+                item => String(item.id) === stationId
+            );
 
+            if (!station) return;
+        }
+
+        // 重複確認
+        if (routeStationsCache.some(
+            item => String(item.id) === String(station.id)
+        )) {
+            message.textContent = "この駅はすでに登録されています。";
             return;
         }
 
-        // 既存駅を追加
-        const station = allStationsCache.find(
-            item => String(item.id) === stationId
-        );
+        // Supabaseへ直接追加
+        const { error } = await client
+            .from("station_lines")
+            .insert({
+                station_id: Number(station.id),
+                line_id: Number(lineId),
+                station_order: routeStationsCache.length + 1
+            });
 
-        if (!station) return;
-
-        if (routeStationsCache.some(
-            item => String(item.id) === stationId
-        )) {
-            message.textContent = "この駅はすでに登録されています。";
+        if (error) {
+            message.textContent = "追加エラー：" + error.message;
             return;
         }
 
@@ -941,55 +1542,7 @@ document.getElementById("addStationToRoute")
         renderRouteStations();
 
         message.textContent =
-            station.name + "を追加しました。変更を保存してください。";
-    });
-
-// =====================================
-// 路線の駅一覧を保存
-// =====================================
-
-document.getElementById("saveRouteStations")
-    .addEventListener("click", async () => {
-
-        const lineId = document.getElementById("routeSelect").value;
-        const message = document.getElementById("routeStationMessage");
-
-        if (!lineId) {
-            message.textContent = "路線を選択してください。";
-            return;
-        }
-
-        const { error: deleteError } = await client
-            .from("station_lines")
-            .delete()
-            .eq("line_id", lineId);
-
-        if (deleteError) {
-            message.textContent = "削除エラー：" + deleteError.message;
-            return;
-        }
-
-        if (routeStationsCache.length > 0) {
-
-            const records = routeStationsCache.map((station, index) => ({
-                station_id: Number(station.id),
-                line_id: Number(lineId),
-                station_order: index + 1
-            }));
-
-            const { error: insertError } = await client
-                .from("station_lines")
-                .insert(records);
-
-            if (insertError) {
-                message.textContent = "保存エラー：" + insertError.message;
-                return;
-            }
-        }
-
-        message.textContent = "路線の駅一覧を保存しました！";
-
-        await loadStationsForRoute();
+            station.name + "を追加し、自動保存しました。";
     });
 
 
@@ -1002,4 +1555,411 @@ document.getElementById("operatorSelect")
 
 document.getElementById("routeSelect")
     .addEventListener("change", loadStationsForRoute);
+
+// =====================================
+// リストから削除する処理
+// =====================================
+
+
+// 路線をリストから削除
+document.getElementById("removeRoute")
+    .addEventListener("click", async () => {
+
+        const lineId =
+            document.getElementById("routeSelect").value;
+
+        if (!lineId) {
+            alert("路線を選択してください。");
+            return;
+        }
+
+        const line = routeLinesCache.find(
+            item => String(item.id) === lineId
+        );
+
+        if (!confirm(
+            line.name +
+            "と現在の事業者との紐づけを解除しますか？"
+        )) {
+            return;
+        }
+
+        const { error } = await client
+            .from("lines")
+            .update({
+                operator_id: null,
+                operator: ""
+            })
+            .eq("id", lineId);
+
+        if (error) {
+            alert("紐づけ解除エラー：" + error.message);
+            return;
+        }
+
+        await loadAdminOptions(
+            document.getElementById("operatorSelect").value
+        );
+
+        alert("事業者との紐づけを解除しました。");
+    });
+    // 未所属路線を事業者に割り当てる
+document.getElementById("assignRoute")
+    .addEventListener("click", async () => {
+
+        const operatorId =
+            document.getElementById("operatorSelect").value;
+
+        const lineId =
+            document.getElementById("unassignedRouteSelect").value;
+
+        if (!operatorId) {
+            alert("先に事業者を選択してください。");
+            return;
+        }
+
+        if (!lineId) {
+            alert("未所属の路線を選択してください。");
+            return;
+        }
+
+        const operator = operatorsCache.find(
+            item => String(item.id) === operatorId
+        );
+
+        const line = routeLinesCache.find(
+            item => String(item.id) === lineId
+        );
+
+        if (!confirm(
+            line.name + "を" + operator.name + "に割り当てますか？"
+        )) return;
+
+        const { error } = await client
+            .from("lines")
+            .update({
+                operator_id: Number(operatorId),
+                operator: operator.name
+            })
+            .eq("id", lineId);
+
+        if (error) {
+            alert("割り当てエラー：" + error.message);
+            return;
+        }
+
+        await loadAdminOptions(operatorId, lineId);
+
+        alert("路線を割り当てました。");
+    });
+console.log("路線削除イベント登録コードまで到達");
+
+// =====================================
+// 日付欄に今日の日付を設定
+// =====================================
+
+function setTodayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    document.getElementById("date").value =
+        `${year}-${month}-${day}`;
+}
+
+setTodayDate();
+
+// =====================================
+// COMMUNITY BOARD / 投稿機能
+// =====================================
+
+// 投稿一覧を読み込む
+
+// =====================================
+// COMMUNITY BOARD / 投稿・いいね表示
+// =====================================
+
+
+async function loadBoardPosts() {
+    const postList = document.getElementById("boardPostList");
+
+    postList.textContent = "投稿を読み込んでいます...";
+
+    const { data: userData } = await client.auth.getUser();
+
+    if (!userData.user) {
+        postList.textContent = "ログインしてください。";
+        return;
+    }
+
+    const currentUserId = userData.user.id;
+
+    // 自分の権限を取得
+    const { data: myProfile, error: myProfileError } = await client
+        .from("profiles")
+        .select("role")
+        .eq("id", currentUserId)
+        .single();
+
+    if (myProfileError) {
+        console.error(myProfileError);
+        postList.textContent = "ユーザー情報を取得できません。";
+        return;
+    }
+
+    const isAdmin = myProfile.role === "admin";
+
+    // 投稿を取得
+    const { data: posts, error } = await client
+        .from("board_posts")
+        .select("id, user_id, title, content, created_at")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error(error);
+        postList.textContent = "投稿の読み込みに失敗しました。";
+        return;
+    }
+
+    if (!posts || posts.length === 0) {
+        postList.textContent = "まだ投稿はありません。";
+        return;
+    }
+
+    // 投稿者のユーザー名を取得
+    const userIds = [...new Set(posts.map(post => post.user_id))];
+
+    const { data: profiles, error: profileError } = await client
+        .from("public_profiles")
+        .select("id, username")
+        .in("id", userIds);
+
+    if (profileError) {
+        console.error(profileError);
+    }
+
+    const usernameMap = new Map(
+        (profiles || []).map(profile => [profile.id, profile.username])
+    );
+
+    // いいね情報を取得
+    const postIds = posts.map(post => post.id);
+
+    const { data: likes, error: likesError } = await client
+        .from("board_likes")
+        .select("post_id, user_id")
+        .in("post_id", postIds);
+
+    if (likesError) {
+        console.error(likesError);
+        postList.textContent = "いいね情報の読み込みに失敗しました。";
+        return;
+    }
+
+    const likeCounts = new Map();
+    const likedPostIds = new Set();
+
+    (likes || []).forEach(like => {
+        likeCounts.set(
+            like.post_id,
+            (likeCounts.get(like.post_id) || 0) + 1
+        );
+
+        if (like.user_id === currentUserId) {
+            likedPostIds.add(like.post_id);
+        }
+    });
+
+    postList.innerHTML = "";
+
+    posts.forEach(post => {
+        const article = document.createElement("article");
+        article.className = "board-post";
+
+        const title = document.createElement("h4");
+        title.textContent = post.title;
+
+        const content = document.createElement("p");
+        content.textContent = post.content;
+
+        const meta = document.createElement("p");
+        meta.className = "board-post-meta";
+
+        const username = usernameMap.get(post.user_id) || "退会済みユーザー";
+        const date = new Date(post.created_at).toLocaleString("ja-JP");
+
+        meta.textContent = `${username} ｜ ${date}`;
+
+        // いいねボタン
+        const likeButton = document.createElement("button");
+        likeButton.type = "button";
+        likeButton.className = "board-like-button";
+
+        const updateLikeButton = () => {
+            const count = likeCounts.get(post.id) || 0;
+            const isLiked = likedPostIds.has(post.id);
+
+            likeButton.textContent =
+                `${isLiked ? "♥" : "♡"} いいね ${count}`;
+
+            likeButton.classList.toggle("liked", isLiked);
+        };
+
+        updateLikeButton();
+
+        likeButton.addEventListener("click", async () => {
+            likeButton.disabled = true;
+
+            let result;
+
+            if (likedPostIds.has(post.id)) {
+                result = await client
+                    .from("board_likes")
+                    .delete()
+                    .eq("post_id", post.id)
+                    .eq("user_id", currentUserId);
+            } else {
+                result = await client
+                    .from("board_likes")
+                    .insert({
+                        post_id: post.id,
+                        user_id: currentUserId
+                    });
+            }
+
+            if (result.error) {
+                console.error(result.error);
+                alert("いいねの更新に失敗しました。");
+                likeButton.disabled = false;
+                return;
+            }
+
+            await loadBoardPosts();
+        });
+
+        article.appendChild(title);
+        article.appendChild(content);
+        article.appendChild(meta);
+        article.appendChild(likeButton);
+
+        // 自分の投稿または管理者の場合に操作ボタンを表示
+        if (post.user_id === currentUserId || isAdmin) {
+
+            // 編集ボタン（自分の投稿のみ）
+            if (post.user_id === currentUserId) {
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.textContent = "編集";
+
+                editButton.addEventListener("click", async () => {
+                    const newTitle = prompt("新しいタイトルを入力してください。", post.title);
+
+                    if (newTitle === null) return;
+
+                    const newContent = prompt("新しい投稿内容を入力してください。", post.content);
+
+                    if (newContent === null) return;
+
+                    if (!newTitle.trim() || !newContent.trim()) {
+                        alert("タイトルと投稿内容は空欄にできません。");
+                        return;
+                    }
+
+                    const { error } = await client
+                        .from("board_posts")
+                        .update({
+                            title: newTitle.trim(),
+                            content: newContent.trim(),
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq("id", post.id);
+
+                    if (error) {
+                        console.error(error);
+                        alert("編集に失敗しました。");
+                        return;
+                    }
+
+                    await loadBoardPosts();
+                });
+
+                article.appendChild(editButton);
+            }
+
+            // 削除ボタン
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.textContent = "削除";
+
+            deleteButton.addEventListener("click", async () => {
+                const confirmed = confirm("この投稿を削除しますか？");
+
+                if (!confirmed) return;
+
+                const { error } = await client
+                    .from("board_posts")
+                    .delete()
+                    .eq("id", post.id);
+
+                if (error) {
+                    console.error(error);
+                    alert("削除に失敗しました。");
+                    return;
+                }
+
+                await loadBoardPosts();
+            });
+
+            article.appendChild(deleteButton);
+        }
+
+        postList.appendChild(article);
+    });
+}
+
+
+
+// 新規投稿
+document.getElementById("boardPostForm")
+    .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const title = document.getElementById("boardTitle").value.trim();
+        const content = document.getElementById("boardContent").value.trim();
+        const message = document.getElementById("boardMessage");
+
+        if (!title || !content) {
+            message.textContent = "タイトルと投稿内容を入力してください。";
+            return;
+        }
+
+        const { data: userData } = await client.auth.getUser();
+
+        if (!userData.user) {
+            message.textContent = "ログイン状態を確認できません。";
+            return;
+        }
+
+        const { error } = await client
+            .from("board_posts")
+            .insert({
+                user_id: userData.user.id,
+                title: title,
+                content: content
+            });
+
+        if (error) {
+            console.error(error);
+            message.textContent = "投稿エラー：" + error.message;
+            return;
+        }
+
+        message.textContent = "投稿しました！";
+
+        document.getElementById("boardPostForm").reset();
+
+        await loadBoardPosts();
+    });
 
