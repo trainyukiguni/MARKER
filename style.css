@@ -584,3 +584,32 @@ input[type="checkbox"] {
     opacity: .5;
     cursor: wait;
 }
+/* 管理者画面：路線の駅一覧 */
+#routeStationList > div {
+    background: #102638 !important;
+    color: #e6f4fa !important;
+    border: 1px solid #29495c !important;
+}
+
+#routeStationList > div span {
+    color: #e6f4fa !important;
+}
+
+/* 駅一覧内の操作ボタン */
+#routeStationList button {
+    background: #163449 !important;
+    color: #e6f4fa !important;
+    border: 1px solid #5bc7e7 !important;
+    margin: 3px;
+    padding: 6px 10px;
+}
+
+#routeStationList button:hover {
+    background: #5bc7e7 !important;
+    color: #071827 !important;
+}
+
+#routeStationList button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
