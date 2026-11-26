@@ -1031,18 +1031,34 @@ function renderRouteStations() {
         const div = document.createElement("div");
         div.style.padding = "10px";
         div.style.margin = "6px 0";
-        div.style.background = "#eef2f6";
+       div.style.background = "#102638";
+　　　　div.style.border = "1px solid #29495c";
+　　　　div.style.color = "#e6f4fa";
         div.style.borderRadius = "6px";
 
         const text = document.createElement("span");
         text.textContent =
             (index + 1) + ". " + station.name +
             "（" + (station.prefecture || "") + "）";
-
+// 操作ボタンの共通デザイン
+function styleStationButton(button) {
+    button.style.background = "#163449";
+    button.style.color = "#e6f4fa";
+    button.style.border = "1px solid #5bc7e7";
+    button.style.borderRadius = "5px";
+    button.style.padding = "6px 10px";
+    button.style.margin = "3px";
+    button.style.cursor = "pointer";
+        if (button.disabled) {
+        button.style.opacity = "0.35";
+        button.style.cursor = "not-allowed";
+    }
+}
         // 上へ移動
         const upButton = document.createElement("button");
         upButton.type = "button";
         upButton.textContent = "↑";
+        styleStationButton(upButton);
         upButton.disabled = index === 0;
 
         upButton.addEventListener("click", async () => {
@@ -1057,6 +1073,7 @@ function renderRouteStations() {
         const downButton = document.createElement("button");
         downButton.type = "button";
         downButton.textContent = "↓";
+        styleStationButton(upButton);
         downButton.disabled = index === routeStationsCache.length - 1;
 
         downButton.addEventListener("click", async () => {
@@ -1071,6 +1088,7 @@ function renderRouteStations() {
         const editButton = document.createElement("button");
         editButton.type = "button";
         editButton.textContent = "編集";
+        styleStationButton(upButton);
 
 
         editButton.addEventListener("click", async () => {
@@ -1108,6 +1126,7 @@ function renderRouteStations() {
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.textContent = "リストから削除";
+        styleStationButton(upButton);
 
         deleteButton.addEventListener("click", async () => {
 
@@ -1125,6 +1144,7 @@ function renderRouteStations() {
         const permanentDeleteButton = document.createElement("button");
         permanentDeleteButton.type = "button";
         permanentDeleteButton.textContent = "駅を完全削除";
+        styleStationButton(upButton);
 
         permanentDeleteButton.addEventListener("click", async () => {
 
