@@ -1058,8 +1058,8 @@ function styleStationButton(button) {
         const upButton = document.createElement("button");
         upButton.type = "button";
         upButton.textContent = "↑";
-        styleStationButton(upButton);
-        upButton.disabled = index === 0;
+upButton.disabled = index === 0;
+styleStationButton(upButton);
 
         upButton.addEventListener("click", async () => {
             [routeStationsCache[index - 1], routeStationsCache[index]] =
@@ -1073,8 +1073,8 @@ function styleStationButton(button) {
         const downButton = document.createElement("button");
         downButton.type = "button";
         downButton.textContent = "↓";
-        styleStationButton(upButton);
-        downButton.disabled = index === routeStationsCache.length - 1;
+downButton.disabled = index === routeStationsCache.length - 1;
+styleStationButton(downButton);
 
         downButton.addEventListener("click", async () => {
             [routeStationsCache[index], routeStationsCache[index + 1]] =
